@@ -1,0 +1,24 @@
+const API_URL = 'https://hp-api.onrender.com/api/characters';
+
+// Saca todos los personajes. Si falla, lanza un Error con un mensaje legible
+// y useFetch lo guarda en su estado `error`.
+export async function fetchCharacters(signal) {
+    let response;
+    try {
+        response = await fetch(API_URL, { signal });
+    } catch (error) {
+        // Una petición cancelada (desmontaje del componente) no es un fallo real
+        if (error.name === 'AbortError') throw error;
+        throw new Error('No se pudo conectar con la API.');
+    }
+
+    if (!response.ok) {
+        throw new Error(`Error en el servidor: ${response.status} ${response.statusText}`.trim());
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!Array.isArray(data)) {
+        throw new Error('La API devolvió un formato inesperado.');
+    }
+    return data;
+}
