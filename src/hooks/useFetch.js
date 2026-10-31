@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { readCache, writeCache } from '../utils/cache.js';
 
 // Hook personalizado reutilizable: carga datos de una API con caché opcional en localStorage.
+// `fetcher` debe tener identidad estable (definida fuera del componente), porque es dependencia del efecto.
 export function useFetch(fetcher, { cacheKey, ttl } = {}) {
     // El estado inicial se calcula en el primer render
     const [state, setState] = useState(() => {

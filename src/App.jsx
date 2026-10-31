@@ -19,7 +19,7 @@ export default function App() {
     const [house, setHouse] = useState(null);         // casa seleccionada en los filtros
     const [selectedId, setSelectedId] = useState(null);
 
-    // Todo lo demás se deriva durante el render, no se guarda en estado
+    // Todo lo demás se deriva durante el render, no se guarda en estado (cálculos baratos: no hace falta useMemo)
     const counts = countByHouse(characters ?? []);
     const hasFilters = query !== '' || house !== null;
 
@@ -27,7 +27,9 @@ export default function App() {
         ? filterCharacters(characters, { query, house }).map(formatCharacter)
         : [];
 
-    const selected = visible.find((char) => char.id === selectedId) ?? null;
+    // Se busca entre todos (no solo en `visible`) para que la ficha no desaparezca si cambian los filtros
+    const selectedRaw = characters?.find((char) => char.id === selectedId);
+    const selected = selectedRaw ? formatCharacter(selectedRaw) : null;
 
     const handleSearch = () => setQuery(draft.trim());
     const handleToggleHouse = (name) => setHouse((current) => (current === name ? null : name));

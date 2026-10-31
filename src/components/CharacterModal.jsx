@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { houseClass } from '../utils/logic.js';
-import { CharacterImage } from './CharacterImage.jsx';
+import CharacterImage from './CharacterImage.jsx';
 
 export default function CharacterModal({ character, onClose }) {
     // Esc cierra la ficha. El listener es global, así que hay que quitarlo al desmontar.

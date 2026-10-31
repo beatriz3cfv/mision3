@@ -8,7 +8,6 @@ export async function fetchCharacters(signal) {
     } catch (error) {
         // Una petición cancelada (desmontaje del componente) no es un fallo real
         if (error.name === 'AbortError') throw error;
-        // throw new Error('No se pudo conectar con la API.');
     }
 
     if (!response.ok) {
