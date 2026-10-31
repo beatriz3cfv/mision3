@@ -1,7 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { fetchCharacters } from './services/api.js';
 import { useFetch } from './hooks/useFetch.js';
-import { useFavorites } from './hooks/useFavorites.js';
 import { countByHouse, filterCharacters, formatCharacter } from './utils/logic.js';
 import SearchBar from './components/SearchBar.jsx';
 import HouseFilters from './components/HouseFilters.jsx';
@@ -13,44 +12,26 @@ const FETCH_OPTIONS = { cacheKey: 'hp-characters', ttl: 60 * 60 * 1000 };   // c
 
 export default function App() {
     const { data: characters, error, loading, retry } = useFetch(fetchCharacters, FETCH_OPTIONS);
-    const { favorites } = useFavorites();
-    const searchRef = useRef(null);   // acceso al <input> del DOM para enfocarlo
 
     // Estado mínimo: solo lo que el usuario puede cambiar
-    const [draft, setDraft] = useState('');                 // lo que hay escrito en el input
-    const [query, setQuery] = useState('');                 // búsqueda aplicada (al pulsar Buscar / Enter)
-    const [house, setHouse] = useState(null);               // casa seleccionada en los filtros
-    const [onlyFavorites, setOnlyFavorites] = useState(false);
+    const [draft, setDraft] = useState('');           // lo que hay escrito en el input
+    const [query, setQuery] = useState('');           // búsqueda aplicada (al pulsar Buscar / Enter)
+    const [house, setHouse] = useState(null);         // casa seleccionada en los filtros
     const [selectedId, setSelectedId] = useState(null);
 
-    // Todo lo demás se DERIVA durante el render (no hace falta guardarlo ni un efecto).
-    // Son cálculos baratos, así que no se memoizan.
-    const hasFilters = query !== '' || house !== null || onlyFavorites;
+    // Todo lo demás se DERIVA durante el render, no se guarda en estado
     const counts = countByHouse(characters ?? []);
+    const hasFilters = query !== '' || house !== null;
 
     const visible = (hasFilters && characters)
-        ? filterCharacters(characters, { query, house, ids: onlyFavorites ? favorites : null }).map(formatCharacter)
+        ? filterCharacters(characters, { query, house }).map(formatCharacter)
         : [];
 
-    // El personaje abierto se busca entre TODOS (no solo entre los visibles),
-    // para que la ficha no se cierre sola si lo quitas de favoritos con el filtro activo.
-    const selectedRaw = characters?.find((char) => char.id === selectedId);
-    const selected = selectedRaw ? formatCharacter(selectedRaw) : null;
+    const selected = visible.find((char) => char.id === selectedId) ?? null;
 
     const handleSearch = () => setQuery(draft.trim());
     const handleToggleHouse = (name) => setHouse((current) => (current === name ? null : name));
-    const handleToggleFavorites = () => setOnlyFavorites((current) => !current);
-
-    const handleClear = () => {
-        setDraft('');
-        setQuery('');
-        setHouse(null);
-        setOnlyFavorites(false);
-        searchRef.current?.focus();
-    };
-
-    // useCallback: closeModal es dependencia del efecto de Modal (listener de Esc),
-    // así que necesita una identidad estable entre renders.
+    // useCallback: es dependencia del efecto de CharacterModal, necesita identidad estable
     const closeModal = useCallback(() => setSelectedId(null), []);
 
     // Renderizado condicional: una sola pantalla según el estado
@@ -70,24 +51,8 @@ export default function App() {
             <header>
                 <h1>Personajes de Harry Potter</h1>
                 {/* No se puede buscar sin datos */}
-                <SearchBar
-                    ref={searchRef}
-                    value={draft}
-                    onChange={setDraft}
-                    onSubmit={handleSearch}
-                    onClear={handleClear}
-                    canClear={draft !== '' || hasFilters}
-                    disabled={!characters}
-                />
-                {characters && (
-                    <HouseFilters
-                        counts={counts}
-                        activeHouse={house}
-                        onToggle={handleToggleHouse}
-                        favoritesActive={onlyFavorites}
-                        onToggleFavorites={handleToggleFavorites}
-                    />
-                )}
+                <SearchBar value={draft} onChange={setDraft} onSubmit={handleSearch} disabled={!characters} />
+                {characters && <HouseFilters counts={counts} activeHouse={house} onToggle={handleToggleHouse} />}
             </header>
 
             <main id="app">{content}</main>

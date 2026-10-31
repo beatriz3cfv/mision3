@@ -272,33 +272,3 @@ h1 {
 .error { color: #ff9a8f; }
 
 .retry-btn { margin-top: 10px; }
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.secondary-btn {
-  padding: 10px 20px;
-  font-size: 1rem;
-  font-family: inherit;
-  background: transparent;
-  color: var(--gold);
-  border: 2px solid var(--gold);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.secondary-btn:hover { background: rgba(224, 184, 76, 0.15); }
-
-.modal-info .secondary-btn { margin-top: 14px; }
-
-.fav-mark { color: var(--gold); margin-left: 8px; }
