@@ -1,5 +1,5 @@
 import { houseClass } from '../utils/logic.js';
-import CharacterImage from './CharacterImage.jsx';
+import { CharacterImage } from './CharacterImage.jsx';
 
 export default function CharacterCard({ character, onOpen }) {
     const handleKeyDown = (event) => {

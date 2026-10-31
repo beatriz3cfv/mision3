@@ -1,7 +1,6 @@
 const API_URL = 'https://hp-api.onrender.com/api/characters';
 
-// Saca todos los personajes. Si falla, lanza un Error con un mensaje legible
-// y useFetch lo guarda en su estado `error`.
+// Saca todos los personajes
 export async function fetchCharacters(signal) {
     let response;
     try {

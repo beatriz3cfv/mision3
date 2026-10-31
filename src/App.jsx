@@ -19,7 +19,7 @@ export default function App() {
     const [house, setHouse] = useState(null);         // casa seleccionada en los filtros
     const [selectedId, setSelectedId] = useState(null);
 
-    // Todo lo demás se DERIVA durante el render, no se guarda en estado
+    // Todo lo demás se deriva durante el render, no se guarda en estado
     const counts = countByHouse(characters ?? []);
     const hasFilters = query !== '' || house !== null;
 
@@ -31,7 +31,6 @@ export default function App() {
 
     const handleSearch = () => setQuery(draft.trim());
     const handleToggleHouse = (name) => setHouse((current) => (current === name ? null : name));
-    // useCallback: es dependencia del efecto de CharacterModal, necesita identidad estable
     const closeModal = useCallback(() => setSelectedId(null), []);
 
     // Renderizado condicional: una sola pantalla según el estado

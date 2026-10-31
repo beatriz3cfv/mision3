@@ -1,4 +1,4 @@
-import CharacterCard from './CharacterCard.jsx';
+import { CharacterCard } from './CharacterCard.jsx';
 
 export default function CharacterGrid({ characters, onOpen }) {
     if (characters.length === 0) {

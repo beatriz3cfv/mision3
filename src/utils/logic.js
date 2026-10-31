@@ -1,4 +1,4 @@
-// Lógica de datos pura (sin React): filtrar, formatear y contar.
+// Lógica de datos: filtrar, formatear y contar.
 export const PLACEHOLDER = '/placeholder.webp';
 
 const normalize = (text) => (text || '').toLowerCase().trim();
@@ -6,7 +6,7 @@ const normalize = (text) => (text || '').toLowerCase().trim();
 // "Gryffindor" -> "house-gryffindor" (los colores viven en el CSS)
 export const houseClass = (house) => `house-${String(house).toLowerCase().replace(/[^a-z]/g, '')}`;
 
-// Filtra por texto (nombre o casa) y por casa seleccionada
+// Filtra por texto y por casa seleccionada
 export function filterCharacters(characters, { query = '', house = null } = {}) {
     const term = normalize(query);
 
@@ -21,7 +21,7 @@ function formatWand(wand) {
 
     const material = [wand.wood, wand.core].filter(Boolean).join(', ');
     const length = wand.length ? `(${wand.length} in)` : '';
-    // Si la varita es un objeto vacío, material y length quedan vacíos
+
     return [material, length].filter(Boolean).join(' ') || 'Desconocida';
 }
 
@@ -47,7 +47,7 @@ export function formatCharacter(char) {
     };
 }
 
-// Cuenta personajes por casa: { Gryffindor: 60, Slytherin: 40, ... }, los personajes sin casa se ignoran.
+// Cuenta personajes por casa: { Gryffindor: 60}
 export function countByHouse(characters) {
     return characters.reduce((counts, char) => {
         if (char.house) {

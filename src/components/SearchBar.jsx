@@ -1,4 +1,4 @@
-// Formulario controlado: el texto vive en App, aquí solo se pinta y se avisa.
+// Formulario controlado
 export default function SearchBar({ value, onChange, onSubmit, disabled }) {
     const handleSubmit = (event) => {
         event.preventDefault();   // Enter y el botón «Buscar» pasan por aquí

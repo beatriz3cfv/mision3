@@ -1,4 +1,4 @@
-// Caché en localStorage con caducidad (TTL). Genérica: sirve para cualquier clave.
+// Caché en localStorage con caducidad
 export function readCache(key, ttl) {
     try {
         const raw = localStorage.getItem(key);

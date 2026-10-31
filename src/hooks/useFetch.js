@@ -28,12 +28,12 @@ export function useFetch(fetcher, { cacheKey, ttl } = {}) {
                 setLoading(false);
             })
             .catch((err) => {
-                if (err.name === 'AbortError') return;   // petición cancelada: no es un error real
+                if (err.name === 'AbortError') return;   // petición cancelada
                 setError(err.message);
                 setLoading(false);
             });
 
-        // Cleanup: cancela la petición si el componente se desmonta o el efecto se relanza
+        // Cancela la petición si el componente se desmonta o el efecto se relanza
         return () => controller.abort();
     }, [fetcher, cacheKey, ttl, attempt]);
 
