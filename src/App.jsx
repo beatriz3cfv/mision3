@@ -1,122 +1,98 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useCallback, useRef, useState } from 'react';
+import { fetchCharacters } from './services/api.js';
+import { useFetch } from './hooks/useFetch.js';
+import { useFavorites } from './hooks/useFavorites.js';
+import { countByHouse, filterCharacters, formatCharacter } from './utils/logic.js';
+import SearchBar from './components/SearchBar.jsx';
+import HouseFilters from './components/HouseFilters.jsx';
+import CharacterGrid from './components/CharacterGrid.jsx';
+import CharacterModal from './components/CharacterModal.jsx';
+import { ErrorMessage, InitialMessage, Loading } from './components/Status.jsx';
 
-function App() {
-  const [count, setCount] = useState(0)
+const FETCH_OPTIONS = { cacheKey: 'hp-characters', ttl: 60 * 60 * 1000 };   // caché de 1 hora
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+export default function App() {
+    const { data: characters, error, loading, retry } = useFetch(fetchCharacters, FETCH_OPTIONS);
+    const { favorites } = useFavorites();
+    const searchRef = useRef(null);   // acceso al <input> del DOM para enfocarlo
 
-      <div className="ticks"></div>
+    // Estado mínimo: solo lo que el usuario puede cambiar
+    const [draft, setDraft] = useState('');                 // lo que hay escrito en el input
+    const [query, setQuery] = useState('');                 // búsqueda aplicada (al pulsar Buscar / Enter)
+    const [house, setHouse] = useState(null);               // casa seleccionada en los filtros
+    const [onlyFavorites, setOnlyFavorites] = useState(false);
+    const [selectedId, setSelectedId] = useState(null);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    // Todo lo demás se DERIVA durante el render (no hace falta guardarlo ni un efecto).
+    // Son cálculos baratos, así que no se memoizan.
+    const hasFilters = query !== '' || house !== null || onlyFavorites;
+    const counts = countByHouse(characters ?? []);
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    const visible = (hasFilters && characters)
+        ? filterCharacters(characters, { query, house, ids: onlyFavorites ? favorites : null }).map(formatCharacter)
+        : [];
+
+    // El personaje abierto se busca entre TODOS (no solo entre los visibles),
+    // para que la ficha no se cierre sola si lo quitas de favoritos con el filtro activo.
+    const selectedRaw = characters?.find((char) => char.id === selectedId);
+    const selected = selectedRaw ? formatCharacter(selectedRaw) : null;
+
+    const handleSearch = () => setQuery(draft.trim());
+    const handleToggleHouse = (name) => setHouse((current) => (current === name ? null : name));
+    const handleToggleFavorites = () => setOnlyFavorites((current) => !current);
+
+    const handleClear = () => {
+        setDraft('');
+        setQuery('');
+        setHouse(null);
+        setOnlyFavorites(false);
+        searchRef.current?.focus();
+    };
+
+    // useCallback: closeModal es dependencia del efecto de Modal (listener de Esc),
+    // así que necesita una identidad estable entre renders.
+    const closeModal = useCallback(() => setSelectedId(null), []);
+
+    // Renderizado condicional: una sola pantalla según el estado
+    let content;
+    if (loading) {
+        content = <Loading />;
+    } else if (error) {
+        content = <ErrorMessage message={error} onRetry={retry} />;
+    } else if (!hasFilters) {
+        content = <InitialMessage />;
+    } else {
+        content = <CharacterGrid characters={visible} onOpen={setSelectedId} />;
+    }
+
+    return (
+        <>
+            <header>
+                <h1>Personajes de Harry Potter</h1>
+                {/* No se puede buscar sin datos */}
+                <SearchBar
+                    ref={searchRef}
+                    value={draft}
+                    onChange={setDraft}
+                    onSubmit={handleSearch}
+                    onClear={handleClear}
+                    canClear={draft !== '' || hasFilters}
+                    disabled={!characters}
+                />
+                {characters && (
+                    <HouseFilters
+                        counts={counts}
+                        activeHouse={house}
+                        onToggle={handleToggleHouse}
+                        favoritesActive={onlyFavorites}
+                        onToggleFavorites={handleToggleFavorites}
+                    />
+                )}
+            </header>
+
+            <main id="app">{content}</main>
+
+            {selected && <CharacterModal character={selected} onClose={closeModal} />}
+        </>
+    );
 }
-
-export default App
