@@ -2,42 +2,39 @@ import { useEffect, useState } from 'react';
 import { readCache, writeCache } from '../utils/cache.js';
 
 // Hook personalizado reutilizable: carga datos de una API con caché opcional en localStorage.
-// `fetcher` tiene que ser una función definida fuera del componente (es dependencia del efecto).
 export function useFetch(fetcher, { cacheKey, ttl } = {}) {
-    const [data, setData] = useState(null);
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // El estado inicial se calcula en el primer render
+    const [state, setState] = useState(() => {
+        const cached = cacheKey ? readCache(cacheKey, ttl) : null;
+        return { data: cached, error: null, loading: !cached };
+    });
     const [attempt, setAttempt] = useState(0);   // sube al reintentar y relanza el efecto
+    const hasData = state.data !== null;
 
     useEffect(() => {
-        const controller = new AbortController();
-        setLoading(true);
-        setError(null);
+        if (hasData) return;   // ya hay datos (de la caché o de una respuesta anterior)
 
-        const cached = cacheKey ? readCache(cacheKey, ttl) : null;
-        if (cached) {
-            setData(cached);
-            setLoading(false);
-            return;
-        }
+        const controller = new AbortController();
 
         fetcher(controller.signal)
             .then((result) => {
                 if (cacheKey) writeCache(cacheKey, result);
-                setData(result);
-                setLoading(false);
+                setState({ data: result, error: null, loading: false });
             })
             .catch((err) => {
-                if (err.name === 'AbortError') return;   // petición cancelada
-                setError(err.message);
-                setLoading(false);
+                if (err.name === 'AbortError') return;   // petición cancelada: no es un error real
+                setState({ data: null, error: err.message, loading: false });
             });
 
-        // Cancela la petición si el componente se desmonta o el efecto se relanza
+        // Cleanup: cancela la petición si el componente se desmonta o el efecto se relanza
         return () => controller.abort();
-    }, [fetcher, cacheKey, ttl, attempt]);
+    }, [fetcher, cacheKey, hasData, attempt]);
 
-    const retry = () => setAttempt((n) => n + 1);
+    // Reintentar responde a un clic, así que el estado se cambia aquí y no dentro de un efecto
+    const retry = () => {
+        setState((current) => ({ ...current, error: null, loading: true }));
+        setAttempt((n) => n + 1);
+    };
 
-    return { data, error, loading, retry };
+    return { ...state, retry };
 }
